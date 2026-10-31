@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>진행자 화면</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="style.css">
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="config.js"></script>
+<script src="common.js"></script>
+</head>
+<body>
+<header class="top"><div class="wrap">
+  <div class="brand"><span class="star">★</span><b id="brandTitle"></b><span class="school" id="brandSchool"></span><small id="brandSub"></small></div>
+  <div class="me"><b>진행자</b></div>
+</div></header>
+<div class="demo-note" id="demoNote" hidden>체험 모드예요. 같은 컴퓨터의 다른 탭에서 index.html을 열면 함께 움직이는 걸 볼 수 있어요.</div>
+
+<main class="wrap">
+  <section id="pinView">
+    <div class="card login">
+      <h2>진행자 화면</h2>
+      <p class="lead">config.js에 적은 진행자 비밀번호를 입력하세요.</p>
+      <input id="pinInput" type="password" inputmode="numeric" placeholder="비밀번호" autocomplete="off">
+      <button class="btn pri" id="pinBtn" style="width:100%;padding:12px">들어가기</button>
+      <p class="msg" id="pinMsg"></p>
+    </div>
+  </section>
+
+  <section id="adminView" class="hidden">
+    <h2>진행 현황</h2>
+    <p class="lead" id="summary"></p>
+    <div class="admin-grid">
+      <div class="card">
+        <b>활동 열기 · 닫기</b>
+        <div id="ctlList"></div>
+      </div>
+      <div class="card">
+        <div class="form-head"><b>모둠 현황</b><span class="msg">이름 옆 ✕를 누르면 그 선생님을 모둠에서 빼요.</span></div>
+        <div class="board" id="board" style="margin-top:12px"></div>
+        <p class="msg" id="noGroup" style="margin-top:12px"></p>
+      </div>
+      <div class="card">
+        <b>초기화</b>
+        <p class="msg" style="margin:6px 0 12px">연수가 끝나면 전체 초기화로 이름과 제출물을 지워 주세요. 되돌릴 수 없어요.</p>
+        <div class="ctl">
+          <div class="info">모둠만 초기화<small>모두 모둠에서 나오고, 제출물은 남아요.</small></div>
+          <button class="btn danger" id="resetGroups">모둠 초기화</button>
+        </div>
+        <div class="ctl">
+          <div class="info">전체 초기화<small>입장한 이름, 모둠, 제출물, 좋아요를 모두 지워요.</small></div>
+          <button class="btn danger" id="resetAll">전체 초기화</button>
+        </div>
+        <div id="confirmBox" class="hidden" style="margin-top:12px">
+          <p class="msg err" id="confirmMsg"></p>
+          <div style="display:flex;gap:8px;margin-top:8px">
+            <button class="btn danger" id="confirmYes">네, 지울게요</button>
+            <button class="btn" id="confirmNo">취소</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<script>
+fillHeader();
+document.title = '진행자 화면 · ' + CONFIG.title;
+const PIN_KEY = 'vibe-admin-' + CONFIG.roomKey;
+let state = {};
+let pendingReset = null;
+
+function unlocked() { try { return sessionStorage.getItem(PIN_KEY) === '1'; } catch (e) { return false; } }
+function showAdmin() { $('pinView').classList.add('hidden'); $('adminView').classList.remove('hidden'); render(); }
+$('pinBtn').onclick = () => {
+  if ($('pinInput').value !== String(CONFIG.adminPin)) { $('pinMsg').className = 'msg err'; $('pinMsg').textContent = '비밀번호가 맞지 않아요.'; return; }
+  try { sessionStorage.setItem(PIN_KEY, '1'); } catch (e) {}
+  showAdmin();
+};
+$('pinInput').addEventListener('keydown', e => { if (e.key === 'Enter') $('pinBtn').click(); });
+if (unlocked()) showAdmin();
+
+Store.subscribe(s => { state = s || {}; render(); });
+
+function render() {
+  if ($('adminView').classList.contains('hidden')) return;
+  const users = state.users || {};
+  const nUsers = Object.keys(users).length;
+  const nGrouped = GROUPS.reduce((n, g) => n + membersOf(state, g.id).length, 0);
+  $('summary').textContent = `입장 ${nUsers}명 · 모둠 배정 ${nGrouped}명 · 모둠 ${GROUPS.length}개 × ${CONFIG.groupSize}명`;
+
+  $('ctlList').innerHTML = ACTS.map(a => {
+    const open = isOpen(state, a.id);
+    const stat = a.type === 'group' ? `모둠에 들어간 선생님 ${nGrouped}명` : `제출 ${subsOf(state, a.id).length}건`;
+    return `<div class="ctl"><div class="info">${a.no}. ${esc(a.title)}<small>${stat}</small></div>
+      <button class="btn switch ${open ? 'on' : ''}" onclick="toggleOpen('${a.id}')">${open ? '● 열림' : '닫힘'}</button></div>`;
+  }).join('');
+
+  $('board').innerHTML = GROUPS.map(g => {
+    const ms = membersOf(state, g.id);
+    return `<div class="gcol ${ms.length >= CONFIG.groupSize ? 'full' : ''}" style="--gc:${g.c};--gbg:${g.bg}">
+      <h3>${esc(g.name)}<span>${ms.length}/${CONFIG.groupSize}</span></h3>
+      ${ms.map(m => `<div class="seat">${esc(m.name)}<button class="x" title="모둠에서 빼기" onclick="kick('${g.id}','${m.uid}')">✕</button></div>`).join('') || '<div class="seat empty">아직 없음</div>'}
+    </div>`;
+  }).join('');
+
+  const loose = Object.entries(users).filter(([uid]) => !groupIdOf(state, uid)).map(([, u]) => esc(u.name));
+  $('noGroup').innerHTML = loose.length ? `모둠 없이 입장한 선생님: ${loose.join(', ')}` : '';
+}
+
+function toggleOpen(id) { Store.set('open/' + id, isOpen(state, id) ? null : true); }
+function kick(gid, uid) { Store.set(`groups/${gid}/${uid}`, null); }
+
+function askReset(kind) {
+  pendingReset = kind;
+  $('confirmMsg').textContent = kind === 'all'
+    ? '정말 전체 초기화할까요? 입장한 이름과 모든 제출물이 지워져요.'
+    : '정말 모둠을 초기화할까요? 모두 모둠에서 나오게 돼요.';
+  $('confirmBox').classList.remove('hidden');
+}
+$('resetGroups').onclick = () => askReset('groups');
+$('resetAll').onclick = () => askReset('all');
+$('confirmNo').onclick = () => { pendingReset = null; $('confirmBox').classList.add('hidden'); };
+$('confirmYes').onclick = () => {
+  const job = pendingReset === 'all' ? Store.resetAll() : Store.set('groups', null);
+  job.then(() => { pendingReset = null; $('confirmBox').classList.add('hidden'); });
+};
+</script>
+</body>
+</html>
