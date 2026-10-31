@@ -17,6 +17,7 @@
   --font: 'Pretendard', -apple-system, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
 }
 * { box-sizing: border-box; }
+[hidden] { display: none !important; }
 body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--font); font-size: 15.5px; line-height: 1.65; }
 .wrap { max-width: 920px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
 
@@ -30,6 +31,10 @@ body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--f
 
 .picker { display: grid; gap: 12px; margin: 22px 0 18px; }
 .seg { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.seg.level { grid-template-columns: repeat(3, 1fr); }
+.sub-h { font-size: 16px; margin: 26px 0 6px; }
+.guidebook { margin: 8px 0; }
+.guidebook summary { cursor: pointer; font-weight: 700; color: #1f8656; }
 .seg button { font: inherit; text-align: left; border: 2px solid var(--line); background: var(--card); border-radius: 12px; padding: 12px 16px; cursor: pointer; color: var(--ink); }
 .seg button b { display: block; font-size: 16px; }
 .seg button small { color: var(--muted); }
@@ -67,6 +72,7 @@ a { color: var(--accent, var(--gem)); }
 
 @media (max-width: 640px) {
   .four { grid-template-columns: repeat(2, 1fr); }
+  .seg.level { grid-template-columns: 1fr; }
   .panel { padding: 18px; }
   .hero h1 { font-size: 23px; }
 }
@@ -84,6 +90,7 @@ a { color: var(--accent, var(--gem)); }
     <div class="seg level" role="tablist" aria-label="단계">
       <button data-level="basic"><b>🌱 초급</b><small>대화만으로 수업용 시뮬레이션</small></button>
       <button data-level="api"><b>🔌 중급</b><small>API로 진짜 데이터 가져오기</small></button>
+      <button data-level="adv"><b>🚀 고급</b><small>Apps Script로 배포하기</small></button>
     </div>
     <div class="seg tool" role="tablist" aria-label="AI 도구">
       <button data-tool="gemini"><b>제미나이</b><small>Gemini · 캔버스</small></button>
@@ -186,6 +193,69 @@ a { color: var(--accent, var(--gem)); }
     <div class="box tip">💡 바깥 데이터를 쓰는 앱을 바로 공유하고 싶다면 이 단계는 제미나이 캔버스가 더 수월해요. 클로드는 화면 디자인과 긴 설명을 다듬는 데 강해서, 제미나이로 만든 앱 코드를 클로드에게 붙여넣고 "더 보기 좋게 다듬어줘"라고 하는 방법도 좋아요.</div>
     <div class="box warn">🔑 인증키가 필요한 API는 키를 코드에 넣지 말고 <b>"키는 화면 입력칸에 넣게 해줘"</b>라고 요청하세요.</div>
   </section>
+
+  <!-- ===================== 고급 · Apps Script ===================== -->
+  <section class="panel" id="adv" style="--accent:#1f8656">
+    <h2>🚀 고급 · 구글 시트에 쌓이는 제출 페이지 만들고 배포하기</h2>
+    <div class="meta"><span>준비물: 구글 계정 + 제미나이</span><span>약 40~50분</span><span>결과물: 누구나 접속하는 웹앱 주소</span></div>
+    <p class="lead">지금까지는 혼자 열어 보는 도구였다면, 고급에서는 <b>여러 사람이 제출하면 내 구글 시트에 차곡차곡 쌓이는</b> 웹앱을 만듭니다. 구글 시트가 저장소, <b>Apps Script</b>가 서버 역할을 해요. 따로 서버를 빌리지 않고 구글 계정만 있으면 됩니다.</p>
+
+    <h3 class="sub-h">📋 처음이라면: 지침서를 통째로 붙여넣기</h3>
+    <p>아래 지침서를 복사해서 제미나이 새 대화에 붙여넣으세요. 그다음부터는 제미나이가 한 단계씩 물어보고 안내해 줘요. 시트 ID를 코드에 넣는 것처럼 헷갈리는 부분도 제미나이가 채워 줍니다.</p>
+    <details class="guidebook">
+      <summary>지침서 펼치기</summary>
+      <div class="prompt">너는 구글 Apps Script로 웹앱을 처음 만드는 교사를 돕는 친절한 안내자야. 아래 순서를 지켜서 한 번에 한 단계씩만 안내해 줘. 내가 "됐어"라고 하면 다음 단계로 넘어가.
+
+1. 먼저 무엇을 만들고 싶은지 물어봐. (누가 제출하는지, 어떤 항목을 받는지, 제출 뒤에 무엇을 보여줄지)
+2. 빈 구글 스프레드시트를 만들고 그 주소를 붙여 달라고 해. 주소에서 스프레드시트 ID를 찾아서 코드에 직접 넣어 줘.
+3. Code.gs 전체 코드를 한 번에 줘. doGet으로 화면(html 파일)을 보여주고, 제출하면 시트에 한 줄씩 저장되게 해. 첫 줄에는 항목 이름을 넣어 줘.
+4. 화면 html 파일 이름을 정확히 알려주고, 그 파일의 전체 코드를 한 번에 줘. 휴대폰에서도 보기 좋게 만들어 줘.
+5. [배포 → 새 배포 → 유형: 웹 앱 → 실행: 나 → 액세스 권한: 모든 사용자]로 배포하는 방법을 알려줘. 권한 승인 화면이 나오면 어떻게 넘어가는지도 알려줘.
+6. 배포된 주소로 직접 제출해 보고 시트에 쌓였는지 확인하게 해.
+7. 오류가 나면 내가 붙여넣는 오류 메시지를 보고 고친 코드 전체를 다시 줘. 코드는 항상 일부가 아니라 전체를 줘.
+
+설명은 중학교 선생님이 이해할 수 있게 쉬운 말로 해 줘.</div>
+    </details>
+
+    <h3 class="sub-h">🎯 만들 것이 정해졌다면: 한 번에 요청하기</h3>
+    <p>시트와 받을 항목이 이미 정해졌다면 이렇게 바로 요청해도 돼요. 대괄호 부분만 바꿔 쓰세요.</p>
+    <div class="prompt">구글 스프레드시트([내 스프레드시트 주소])에 응답이 쌓이는 설문 웹앱을 Apps Script로 만들고 싶어. Code.gs와 화면 html 파일을 각각 전체 코드로 줘.
+
+들어오면 이름을 입력하고 아래 질문에 답한 뒤 제출하면, 시트에 제출 시각과 함께 한 줄씩 저장되게 해줘.
+
+1. (객관식) 오늘 연수 내용은 수업에 바로 쓸 수 있을 것 같나요? (바로 쓸 수 있어요 / 조금 다듬으면 쓸 수 있어요 / 아직 어려워요)
+2. (주관식) 다음 연수에서 더 배우고 싶은 것을 적어 주세요.
+
+제출이 끝나면 "제출했습니다" 화면을 보여줘. 휴대폰에서도 보기 좋게 만들어 줘.</div>
+
+    <h3 class="sub-h">전체 흐름 한눈에 보기</h3>
+    <ol class="steps">
+      <li>빈 구글 스프레드시트를 만들고 주소를 제미나이에게 알려 줍니다.</li>
+      <li>시트 메뉴 <b>[확장 프로그램 → Apps Script]</b>로 들어가서, 제미나이가 준 <b>Code.gs</b> 코드를 통째로 붙여넣고 저장합니다.</li>
+      <li>왼쪽 파일 목록의 <b>＋ → HTML</b>로 새 파일을 만들고, 이름을 제미나이가 알려 준 것과 <b>똑같이</b> 짓고 화면 코드를 붙여넣습니다.</li>
+      <li>오른쪽 위 <b>[배포 → 새 배포]</b> → 유형 <b>웹 앱</b> → 액세스 권한 <b>모든 사용자</b>로 배포합니다. 처음에는 권한 승인 화면이 나오니 내 계정을 골라 허용하세요.</li>
+      <li>배포 뒤 나온 <b>웹 앱 URL</b>로 들어가 직접 제출해 보고, 시트에 한 줄이 쌓였는지 확인합니다.</li>
+    </ol>
+    <div class="box tip">💡 코드를 고친 뒤에는 <b>[배포 → 배포 관리 → 연필 아이콘 → 버전: 새 버전]</b>으로 다시 배포하세요. "새 배포"를 또 누르면 주소가 바뀌어서, 이미 나눠 준 링크가 열리지 않아요.</div>
+
+    <h3 class="sub-h">🔒 더 나아가기: API 인증키를 서버에 숨기기</h3>
+    <p>중급에서는 인증키를 화면 입력칸에 넣었어요. 이제는 Apps Script라는 서버가 있으니, 키를 <b>Code.gs 안에만</b> 두면 웹앱을 쓰는 사람에게 키가 보이지 않아요.</p>
+    <div class="prompt">지금 만든 Apps Script 웹앱(Code.gs + 화면 html)에 [API 이름] API를 붙이고 싶어. API 설명 문서는 [문서 주소]이고, 발급받은 인증키는 [내 인증키]야.
+
+API는 Code.gs 안에서 UrlFetchApp.fetch()로 불러 주고, 화면 html은 google.script.run으로 Code.gs의 함수를 불러서 결과만 받아 보여주게 해줘. 인증키는 화면 html 코드에 절대 넣지 마.
+
+화면에서 하고 싶은 것: [예: 오늘 우리 학교 급식 메뉴를 카드로 보여주기]
+
+고친 Code.gs와 화면 html 전체 코드를 다시 줘.</div>
+
+    <div class="box warn">⚠️ <b>꼭 지켜 주세요</b>
+      <ul>
+        <li>학교(Workspace) 계정은 "모든 사용자" 배포가 막혀 있을 수 있어요. 막히면 개인 Gmail로 해 보세요.</li>
+        <li>"모든 사용자"로 배포하면 주소를 아는 누구나 제출할 수 있어요. 연습 때는 학생 이름, 연락처 같은 개인정보를 받지 마세요.</li>
+        <li>인증키는 Code.gs에만 두고, 화면 코드나 공유 링크에는 넣지 마세요.</li>
+      </ul>
+    </div>
+  </section>
 </main>
 
 <script>
@@ -194,15 +264,19 @@ const LAB_URL = 'https://kimsiwon-486.github.io/vibe-lab/';
 document.getElementById('labLink').href = LAB_URL;
 
 let level = 'basic', tool = 'gemini';
-// #basic-claude 처럼 주소 끝에 붙이면 그 화면으로 바로 열려요
+// #basic-claude, #adv 처럼 주소 끝에 붙이면 그 화면으로 바로 열려요
 const m = location.hash.match(/^#(basic|api)-(gemini|claude)$/);
 if (m) { level = m[1]; tool = m[2]; }
+if (location.hash === '#adv') level = 'adv';
 
+// 고급은 도구와 상관없이 한 화면이라 도구 고르기를 숨긴다
+const panelId = () => (level === 'adv' ? 'adv' : `${level}-${tool}`);
 function show() {
-  document.querySelectorAll('.panel').forEach(p => { p.hidden = p.id !== `${level}-${tool}`; });
+  document.querySelector('.seg.tool').hidden = level === 'adv';
+  document.querySelectorAll('.panel').forEach(p => { p.hidden = p.id !== panelId(); });
   document.querySelectorAll('[data-level]').forEach(b => { b.classList.toggle('on', b.dataset.level === level); b.setAttribute('aria-selected', b.dataset.level === level); });
   document.querySelectorAll('[data-tool]').forEach(b => { b.classList.toggle('on', b.dataset.tool === tool); b.setAttribute('aria-selected', b.dataset.tool === tool); });
-  history.replaceState(null, '', `#${level}-${tool}`);
+  history.replaceState(null, '', '#' + panelId());
 }
 document.querySelectorAll('[data-level]').forEach(b => b.onclick = () => { level = b.dataset.level; show(); });
 document.querySelectorAll('[data-tool]').forEach(b => b.onclick = () => { tool = b.dataset.tool; show(); });
