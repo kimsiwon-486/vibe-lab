@@ -57,12 +57,13 @@ const ACTS = [
       { k: 'memo',   label: '막혔던 점 · 해결한 방법', type: 'area' },
     ] },
 
-  { id: 'plan', no: 3, type: 'submit', title: '내 수업에 적용하기',
-    desc: '오늘 배운 것을 내 수업이나 업무에 어떻게 쓸지 적어 보세요.',
+  { id: 'api', no: 3, type: 'submit', title: '실습③ API로 진짜 데이터 가져오기',
+    desc: '[API 이름] · [보여줄 내용] · [화면 모양] 빈칸 3개를 채워 만들어 보세요. 실제로 작동하는 Open-Meteo, PubChem부터 추천합니다.',
     fields: [
-      { k: 'title', label: '만들고 싶은 도구 (한 줄)', ph: '예: 화학 반응 속도 시뮬레이션', req: true },
-      { k: 'unit',  label: '적용할 학년 · 단원', ph: '예: 중3 화학 반응' },
-      { k: 'how',   label: '수업에서 쓰는 장면', type: 'area', ph: '언제, 학생들이 무엇을 하게 되나요?' },
-      { k: 'worry', label: '걱정되는 점 · 필요한 도움', type: 'area' },
+      { k: 'title',   label: '앱 제목', ph: '예: 우리 학교 오늘 날씨', req: true },
+      { k: 'apiName', label: '사용한 API', ph: '예: Open-Meteo' },
+      { k: 'link',    label: '공유 링크', type: 'url', ph: 'https://...' },
+      { k: 'prompt',  label: '사용한 프롬프트', type: 'area' },
+      { k: 'memo',    label: '막혔던 점 · 해결한 방법', type: 'area' },
     ] },
 ];
